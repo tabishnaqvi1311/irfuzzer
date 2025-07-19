@@ -8,6 +8,8 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.hardware.ConsumerIrManager;
 import android.os.Handler;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -22,12 +24,15 @@ public class MainActivity extends AppCompatActivity {
     private int currentPatternIndex = 0;
     private boolean isScanning = false;
 
-    // Placeholder for IR patterns (e.g., NEC protocol)
-    // We'll need to generate or find these.
-    // For now, just an example.
-    private int[][] patterns = {
-            {19000, 4500, 560, 560, 560, 1690, 560, 560, 560, 560, 560, 560, 560, 560, 560, 560, 560, 1690, 560, 1690, 560, 560, 560, 1690, 560, 1690, 560, 1690, 560, 1690, 560, 1690, 560, 560, 560, 560, 560, 560, 560, 560, 560, 560, 560, 1690, 560, 560, 560, 560, 560, 560, 560, 560, 560, 1690, 560, 1690, 560, 1690, 560, 560, 560, 1690, 560, 1690, 560, 1690, 560, 1690, 560, 40000}
-    };
+    private List<int[]> patterns = new ArrayList<>();
+
+    // NEC protocol constants
+    private static final int NEC_HDR_MARK = 9000;
+    private static final int NEC_HDR_SPACE = 4500;
+    private static final int NEC_BIT_MARK = 560;
+    private static final int NEC_ONE_SPACE = 1690;
+    private static final int NEC_ZERO_SPACE = 560;
+    private static final int NEC_RPT_SPACE = 2250;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -58,7 +63,9 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        log("App started. Ready to scan.");
+        log("App started. Generating IR patterns...");
+        generateNecCodes();
+        log(patterns.size() + " patterns generated. Ready to scan.");
     }
 
     private void startScan() {
@@ -84,8 +91,8 @@ public class MainActivity extends AppCompatActivity {
             log("Error: No IR Emitter found.");
             return;
         }
-        if (patternIndex < patterns.length) {
-            int[] pattern = patterns[patternIndex];
+        if (patternIndex < patterns.size()) {
+            int[] pattern = patterns.get(patternIndex);
             // Carrier frequency is 38kHz, as mentioned in the plan
             irManager.transmit(38000, pattern);
             log("Sent pattern #" + patternIndex);
@@ -101,15 +108,51 @@ public class MainActivity extends AppCompatActivity {
             if (isScanning) {
                 testPattern(currentPatternIndex);
                 currentPatternIndex++;
-                if (currentPatternIndex < patterns.length) {
+                if (currentPatternIndex < patterns.size()) {
                     // Delay between signals, as per the plan (1500ms)
-                    handler.postDelayed(this, 1500);
+                    handler.postDelayed(this, 2000); // Increased delay
                 } else {
                     stopScan();
                 }
             }
         }
     };
+
+    private void generateNecCodes() {
+        // Generate codes for a range of addresses and commands
+        for (int address = 0; address < 256; address++) {
+            for (int command = 0; command < 256; command++) {
+                patterns.add(buildNecPattern(address, command));
+            }
+        }
+    }
+
+    private int[] buildNecPattern(int address, int command) {
+        List<Integer> pattern = new ArrayList<>();
+        pattern.add(NEC_HDR_MARK);
+        pattern.add(NEC_HDR_SPACE);
+
+        addByte(pattern, address);
+        addByte(pattern, ~address & 0xFF);
+        addByte(pattern, command);
+        addByte(pattern, ~command & 0xFF);
+
+        pattern.add(NEC_BIT_MARK);
+
+        return pattern.stream().mapToInt(i -> i).toArray();
+    }
+
+    private void addByte(List<Integer> pattern, int data) {
+        for (int i = 0; i < 8; i++) {
+            pattern.add(NEC_BIT_MARK);
+            if ((data & 1) == 1) {
+                pattern.add(NEC_ONE_SPACE);
+            } else {
+                pattern.add(NEC_ZERO_SPACE);
+            }
+            data >>= 1;
+        }
+    }
 
     private void log(String message) {
         Log.d(TAG, message);
