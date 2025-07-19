@@ -1,0 +1,53 @@
+# Built application files
+*.apk
+*.ap_
+
+# Files for the ART/Dalvik VM
+*.dex
+
+# Java class files
+*.class
+
+# Generated files
+build/
+app/build/
+
+# Gradle files
+.gradle/
+*.gradle.kts
+
+# Local configuration file (SDK location, etc.)
+local.properties
+
+# IntelliJ / Android Studio files
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Keystore files
+*.jks
+*.keystore
+
+# External native build files
+.externalNativeBuild/
+
+# AVD system files
+.android/
+
+# Crashlytics/Fabric files
+fabric/
+
+# Android Studio saves this when a project is opened.
+.navigation/
+
+# Caches
+.cxx/
+.transforms/
+
+# Test results
+/test-results/
+
+# Lint results
+/lint-results.html
+/lint-results.xml
